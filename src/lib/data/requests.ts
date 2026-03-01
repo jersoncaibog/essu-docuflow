@@ -1,0 +1,150 @@
+import type { Request } from '$lib/types';
+
+export const mockRequests: Request[] = [
+	{
+		id: 'REQ-2024-001',
+		studentId: '2022-00123',
+		studentName: 'Juan Dela Cruz',
+		program: 'BSIT',
+		documentType: 'TOR',
+		status: 'pending',
+		paymentStatus: 'paid',
+		priority: 'regular',
+		dateRequested: '2024-01-15',
+		purpose: 'Graduate school application',
+		numCopies: 2
+	},
+	{
+		id: 'REQ-2024-002',
+		studentId: '2021-00456',
+		studentName: 'Maria Santos',
+		program: 'BSED',
+		documentType: 'Diploma',
+		status: 'processing',
+		paymentStatus: 'paid',
+		priority: 'rush',
+		dateRequested: '2024-01-16',
+		assignedStaff: 'Jane Doe',
+		purpose: 'Employment requirement',
+		numCopies: 1
+	},
+	{
+		id: 'REQ-2024-003',
+		studentId: '2020-00789',
+		studentName: 'Pedro Reyes',
+		program: 'BSCS',
+		documentType: 'Good Moral Certificate',
+		status: 'completed',
+		paymentStatus: 'paid',
+		priority: 'regular',
+		dateRequested: '2024-01-10',
+		assignedStaff: 'John Smith',
+		dateCompleted: '2024-01-14',
+		purpose: 'Job application',
+		numCopies: 3
+	},
+	{
+		id: 'REQ-2024-004',
+		studentId: '2023-00321',
+		studentName: 'Ana Gonzales',
+		program: 'BSBM',
+		documentType: 'Certificate of Graduation',
+		status: 'rejected',
+		paymentStatus: 'for-verification',
+		priority: 'regular',
+		dateRequested: '2024-01-12',
+		rejectionReason: 'Incomplete clearance requirements',
+		purpose: 'Scholarship application',
+		numCopies: 1
+	},
+	{
+		id: 'REQ-2024-005',
+		studentId: '2021-00654',
+		studentName: 'Carlos Mendoza',
+		program: 'BSIT',
+		documentType: 'TOR',
+		status: 'pending',
+		paymentStatus: 'unpaid',
+		priority: 'rush',
+		dateRequested: '2024-01-17',
+		purpose: 'Board exam application',
+		numCopies: 2
+	},
+	{
+		id: 'REQ-2024-006',
+		studentId: '2020-00111',
+		studentName: 'Luisa Fernandez',
+		program: 'BSED',
+		documentType: 'Good Moral Certificate',
+		status: 'ready',
+		paymentStatus: 'paid',
+		priority: 'regular',
+		dateRequested: '2024-01-11',
+		assignedStaff: 'Jane Doe',
+		purpose: 'Teaching application',
+		numCopies: 1
+	},
+	{
+		id: 'REQ-2024-007',
+		studentId: '2022-00987',
+		studentName: 'Roberto Cruz',
+		program: 'BSCS',
+		documentType: 'Diploma',
+		status: 'processing',
+		paymentStatus: 'paid',
+		priority: 'regular',
+		dateRequested: '2024-01-13',
+		assignedStaff: 'John Smith',
+		purpose: 'Graduate school',
+		numCopies: 1
+	},
+	{
+		id: 'REQ-2024-008',
+		studentId: '2021-00222',
+		studentName: 'Elena Torres',
+		program: 'BSBM',
+		documentType: 'TOR',
+		status: 'completed',
+		paymentStatus: 'paid',
+		priority: 'regular',
+		dateRequested: '2024-01-08',
+		assignedStaff: 'Jane Doe',
+		dateCompleted: '2024-01-12',
+		purpose: 'Employment',
+		numCopies: 2
+	},
+	{
+		id: 'REQ-2024-009',
+		studentId: '2023-00555',
+		studentName: 'Miguel Ramos',
+		program: 'BSIT',
+		documentType: 'Certificate of Completion',
+		status: 'pending',
+		paymentStatus: 'for-verification',
+		priority: 'regular',
+		dateRequested: '2024-01-18',
+		purpose: 'Work visa application',
+		numCopies: 1
+	},
+	{
+		id: 'REQ-2024-010',
+		studentId: '2020-00333',
+		studentName: 'Rosa Aquino',
+		program: 'BSED',
+		documentType: 'Grades Report',
+		status: 'cancelled',
+		paymentStatus: 'unpaid',
+		priority: 'regular',
+		dateRequested: '2024-01-09',
+		purpose: 'Transfer school',
+		numCopies: 1
+	}
+];
+
+export const requestStatusTimeline = (requestId: string) => [
+	{ date: '2024-01-15 08:00', title: 'Request Submitted', description: 'Student submitted the request online.', status: 'completed' as const },
+	{ date: '2024-01-15 10:30', title: 'Payment Verified', description: 'Payment receipt confirmed by cashier.', status: 'completed' as const },
+	{ date: '2024-01-16 09:00', title: 'Under Review', description: `Request ${requestId} is being reviewed by staff.`, status: 'current' as const },
+	{ date: '', title: 'Document Processing', description: 'Document is being prepared.', status: 'pending' as const },
+	{ date: '', title: 'Ready for Release', description: 'Document is ready for pickup.', status: 'pending' as const }
+];
