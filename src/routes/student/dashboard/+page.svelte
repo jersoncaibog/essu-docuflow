@@ -80,13 +80,13 @@
 		<!-- Right column -->
 		<div class="space-y-4">
 			<!-- Clearance Progress -->
-			<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+			 <!-- TODO:: Remove Clearance Status -->
+			<!-- <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
 				<div class="flex items-center justify-between mb-4">
 					<h3 class="font-semibold text-gray-800">Clearance Status</h3>
 					<span class="text-sm font-bold text-essu-green">{clearancePct}%</span>
 				</div>
 
-				<!-- Progress ring (simplified as bar) -->
 				<div class="w-full bg-gray-100 rounded-full h-2 mb-4">
 					<div class="bg-essu-green h-2 rounded-full transition-all" style="width: {clearancePct}%"></div>
 				</div>
@@ -99,7 +99,7 @@
 						</div>
 					{/each}
 				</div>
-			</div>
+			</div> -->
 
 			<!-- Notifications snippet -->
 			<div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">

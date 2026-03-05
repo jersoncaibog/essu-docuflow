@@ -44,7 +44,7 @@
 	<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 		<div class="h-24 bg-gradient-to-r from-essu-green to-essu-green-mid"></div>
 		<div class="px-6 pb-6">
-			<div class="flex items-end gap-4 -mt-10 mb-4">
+			<div class="flex items-end gap-4 -mt-3 mb-4">
 				<div class="w-20 h-20 rounded-2xl bg-white border-4 border-white shadow-md flex items-center justify-center text-2xl font-bold text-essu-green">
 					{profile?.avatarInitials ?? '??'}
 				</div>
