@@ -9,7 +9,7 @@ import { JWT_SECRET, RESEND_API } from '$env/static/private';
 const resend = new Resend(RESEND_API);
 
 export const POST: RequestHandler = async ({ request }) => {
-	const { firstName, middleName, lastName, dateOfBirth, email, studentId, program, studentType, lastSchoolYear, password } = await request.json();
+	const { firstName, middleName, lastName, suffix, dateOfBirth, email, studentId, program, studentType, lastSchoolYear, password } = await request.json();
 
 	if (!firstName || !lastName || !dateOfBirth || !email || !studentId || !program || !studentType || !lastSchoolYear || !password) {
 		return json({ error: 'Missing required fields' }, { status: 400 });
@@ -26,7 +26,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const passwordHash = createHash('sha256').update(password).digest('hex');
-	const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+	const fullName = [firstName, middleName, lastName, suffix].filter(Boolean).join(' ');
 
 	const validTypes = ['Enrolled', 'Supplemental', 'Former', 'Alumni'];
 	if (!validTypes.includes(studentType)) {
@@ -34,9 +34,9 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	await pool.execute(
-		`INSERT INTO users (first_name, middle_name, last_name, date_of_birth, email, password_hash, role, student_id, program, student_type, last_school_year, verified)
-		 VALUES (?, ?, ?, ?, ?, ?, 'Student', ?, ?, ?, ?, FALSE)`,
-		[firstName, middleName || null, lastName, dateOfBirth, email, passwordHash, studentId, program, studentType, lastSchoolYear]
+		`INSERT INTO users (first_name, middle_name, last_name, suffix, date_of_birth, email, password_hash, role, student_id, program, student_type, last_school_year, verified)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, 'Student', ?, ?, ?, ?, FALSE)`,
+		[firstName, middleName || null, lastName, suffix || null, dateOfBirth, email, passwordHash, studentId, program, studentType, lastSchoolYear]
 	);
 
 	const token = signJwt({ email }, JWT_SECRET, 86400);

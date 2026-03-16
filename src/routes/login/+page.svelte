@@ -7,9 +7,13 @@
 	let mode: 'login' | 'signup' | 'check-email' = $state('login');
 	let email = $state('');
 	let password = $state('');
+	let showPassword = $state(false);
+	let showConfirmPassword = $state(false);
+	let showLoginPassword = $state(false);
 	let firstName = $state('');
 	let middleName = $state('');
 	let lastName = $state('');
+	let suffix = $state('');
 	let dateOfBirth = $state('');
 	let confirmPassword = $state('');
 	let studentId = $state('');
@@ -57,7 +61,7 @@
 			const res = await fetch('/api/register', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ firstName, middleName, lastName, dateOfBirth, email, studentId, program, studentType, lastSchoolYear: Number(lastSchoolYear), password })
+				body: JSON.stringify({ firstName, middleName, lastName, suffix: suffix || null, dateOfBirth, email, studentId, program, studentType, lastSchoolYear: Number(lastSchoolYear), password })
 			});
 			const data = await res.json();
 			if (!res.ok) {
@@ -146,13 +150,19 @@
 							</div>
 							<div>
 								<label class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-								<input
-									bind:value={password}
-									type="password"
-									placeholder="Enter your password"
-									required
-									class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
-								/>
+								<div class="relative">
+									<input
+										bind:value={password}
+										type={showLoginPassword ? 'text' : 'password'}
+										placeholder="Enter your password"
+										required
+										class="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
+									/>
+									<button type="button" onclick={() => (showLoginPassword = !showLoginPassword)}
+										class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+										<i class="fa-solid {showLoginPassword ? 'fa-eye-slash' : 'fa-eye'} text-sm"></i>
+									</button>
+								</div>
 							</div>
 							<div class="flex items-center justify-between text-sm">
 								<label class="flex items-center gap-2 text-gray-500 cursor-pointer">
@@ -197,15 +207,28 @@
 									/>
 								</div>
 							</div>
-							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
-								<input
-									bind:value={lastName}
-									type="text"
-									placeholder="Cruz"
-									required
-									class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
-								/>
+							<div class="grid grid-cols-3 gap-3">
+								<div class="col-span-2">
+									<label class="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
+									<input
+										bind:value={lastName}
+										type="text"
+										placeholder="Cruz"
+										required
+										class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
+									/>
+								</div>
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-1.5">Suffix <span class="text-gray-400 font-normal">(opt.)</span></label>
+									<select bind:value={suffix} class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-essu-green/30">
+										<option value="">—</option>
+										<option value="Jr.">Jr.</option>
+										<option value="Sr.">Sr.</option>
+										<option value="II">II</option>
+										<option value="III">III</option>
+										<option value="IV">IV</option>
+									</select>
+								</div>
 							</div>
 							<div class="grid grid-cols-2 gap-3">
 								<div>
@@ -286,25 +309,44 @@
 							<div class="grid grid-cols-2 gap-3">
 								<div>
 									<label class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-									<input
-										bind:value={password}
-										type="password"
-										placeholder="Min. 8 characters"
-										required
-										minlength="8"
-										class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
-									/>
+									<div class="relative">
+										<input
+											bind:value={password}
+											type={showPassword ? 'text' : 'password'}
+											placeholder="Min. 8 characters"
+											required
+											minlength="8"
+											class="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
+										/>
+										<button type="button" onclick={() => (showPassword = !showPassword)}
+											class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+											<i class="fa-solid {showPassword ? 'fa-eye-slash' : 'fa-eye'} text-sm"></i>
+										</button>
+									</div>
 								</div>
 								<div>
 									<label class="block text-sm font-medium text-gray-700 mb-1.5">Confirm</label>
-									<input
-										bind:value={confirmPassword}
-										type="password"
-										placeholder="Repeat password"
-										required
-										class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
-									/>
+									<div class="relative">
+										<input
+											bind:value={confirmPassword}
+											type={showConfirmPassword ? 'text' : 'password'}
+											placeholder="Repeat password"
+											required
+											class="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
+										/>
+										<button type="button" onclick={() => (showConfirmPassword = !showConfirmPassword)}
+											class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+											<i class="fa-solid {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'} text-sm"></i>
+										</button>
+									</div>
 								</div>
+							</div>
+							<div class="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2.5">
+								<i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm mt-0.5 shrink-0"></i>
+								<p class="text-xs text-amber-700 leading-relaxed">
+									Please review all your information carefully before submitting.
+									Your <strong>name, student ID, and program</strong> must match your official school records exactly, as these cannot be changed after registration.
+								</p>
 							</div>
 							<button
 								type="submit"

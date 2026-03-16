@@ -130,6 +130,22 @@
 		if (!json) return [];
 		try { return JSON.parse(json); } catch { return []; }
 	}
+
+	async function openTemplate(path: string) {
+		const res = await fetch(`/api/storage?bucket=templates&path=${encodeURIComponent(path)}`);
+		const data = await res.json();
+		if (data.url) window.open(data.url, '_blank');
+	}
+
+	async function downloadTemplate(path: string, name: string) {
+		const res = await fetch(`/api/storage?bucket=templates&path=${encodeURIComponent(path)}`);
+		const data = await res.json();
+		if (!data.url) return;
+		const a = document.createElement('a');
+		a.href = data.url;
+		a.download = name;
+		a.click();
+	}
 </script>
 
 <div class="space-y-5">
@@ -183,9 +199,23 @@
 
 					<!-- Template -->
 					{#if doc.template_path}
-						<div class="mt-3 flex items-center gap-2 text-xs text-essu-green bg-essu-green/5 border border-essu-green/20 rounded-lg px-3 py-2">
-							<i class="fa-solid fa-paperclip"></i>
-							<span class="truncate">{doc.template_name}</span>
+						<div class="mt-3 flex items-center gap-2 text-xs bg-essu-green/5 border border-essu-green/20 rounded-lg px-3 py-2">
+							<i class="fa-solid fa-paperclip text-essu-green shrink-0"></i>
+							<span class="flex-1 truncate text-essu-green font-medium">{doc.template_name}</span>
+							<button
+								onclick={() => openTemplate(doc.template_path!)}
+								class="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-essu-green/30 text-essu-green hover:bg-essu-green hover:text-white transition-colors"
+								title="View"
+							>
+								<i class="fa-solid fa-eye"></i> View
+							</button>
+							<button
+								onclick={() => downloadTemplate(doc.template_path!, doc.template_name!)}
+								class="shrink-0 flex items-center gap-1 px-2 py-1 rounded-md bg-white border border-essu-green/30 text-essu-green hover:bg-essu-green hover:text-white transition-colors"
+								title="Download"
+							>
+								<i class="fa-solid fa-download"></i> Download
+							</button>
 						</div>
 					{/if}
 

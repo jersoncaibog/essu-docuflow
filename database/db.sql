@@ -21,6 +21,7 @@ CREATE TABLE users (
     middle_name      VARCHAR(50),
     last_name        VARCHAR(50) NOT NULL,
     date_of_birth    DATE,
+    suffix           VARCHAR(10),
     email            VARCHAR(100) UNIQUE NOT NULL,
     password_hash    VARCHAR(255) NOT NULL,
     role             ENUM('Student', 'Staff', 'Admin') NOT NULL DEFAULT 'Student',
