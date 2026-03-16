@@ -28,6 +28,7 @@
 		{ label: 'Dashboard', icon: 'fa-solid fa-gauge-high', href: '/staff/dashboard' },
 		{ label: 'All Requests', icon: 'fa-solid fa-list-check', href: '/staff/requests' },
 		{ label: 'Documents', icon: 'fa-solid fa-file-lines', href: '/staff/documents' },
+		{ label: 'Students', icon: 'fa-solid fa-user-graduate', href: '/staff/students' },
 		{ label: 'Reports', icon: 'fa-solid fa-chart-bar', href: '/staff/reports' },
 		{ label: 'Notifications', icon: 'fa-regular fa-bell', href: '/staff/notifications' },
 		{ label: 'My Profile', icon: 'fa-solid fa-circle-user', href: '/staff/profile' }
@@ -37,6 +38,7 @@
 		'/staff/dashboard': 'Dashboard',
 		'/staff/requests': 'All Requests',
 		'/staff/documents': 'Documents',
+		'/staff/students': 'Student Management',
 		'/staff/reports': 'Reports & Analytics',
 		'/staff/notifications': 'Notifications',
 		'/staff/profile': 'My Profile'
