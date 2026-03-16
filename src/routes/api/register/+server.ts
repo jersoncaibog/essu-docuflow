@@ -9,9 +9,9 @@ import { JWT_SECRET, RESEND_API } from '$env/static/private';
 const resend = new Resend(RESEND_API);
 
 export const POST: RequestHandler = async ({ request }) => {
-	const { fullName, email, password } = await request.json();
+	const { firstName, middleName, lastName, dateOfBirth, email, studentId, program, studentType, lastSchoolYear, password } = await request.json();
 
-	if (!fullName || !email || !password) {
+	if (!firstName || !lastName || !dateOfBirth || !email || !studentId || !program || !studentType || !lastSchoolYear || !password) {
 		return json({ error: 'Missing required fields' }, { status: 400 });
 	}
 
@@ -20,12 +20,23 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'Email already registered' }, { status: 409 });
 	}
 
+	const [existingStudentId] = await pool.execute('SELECT user_id FROM users WHERE student_id = ?', [studentId]);
+	if ((existingStudentId as unknown[]).length > 0) {
+		return json({ error: 'Student ID already registered' }, { status: 409 });
+	}
+
 	const passwordHash = createHash('sha256').update(password).digest('hex');
+	const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+
+	const validTypes = ['Enrolled', 'Supplemental', 'Former', 'Alumni'];
+	if (!validTypes.includes(studentType)) {
+		return json({ error: 'Invalid student type' }, { status: 400 });
+	}
 
 	await pool.execute(
-		`INSERT INTO users (full_name, email, password_hash, role, clearance_status, account_status, verified)
-		 VALUES (?, ?, ?, 'Student', 'Pending', 'Active', FALSE)`,
-		[fullName, email, passwordHash]
+		`INSERT INTO users (first_name, middle_name, last_name, date_of_birth, email, password_hash, role, student_id, program, student_type, last_school_year, verified)
+		 VALUES (?, ?, ?, ?, ?, ?, 'Student', ?, ?, ?, ?, FALSE)`,
+		[firstName, middleName || null, lastName, dateOfBirth, email, passwordHash, studentId, program, studentType, lastSchoolYear]
 	);
 
 	const token = signJwt({ email }, JWT_SECRET, 86400);

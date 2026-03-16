@@ -3,14 +3,27 @@
 	import TopBar from '$lib/components/layout/TopBar.svelte';
 	import { page } from '$app/stores';
 	import { sidebarCollapsed } from '$lib/stores/sidebar';
-	import { currentUser, mockStudentUser } from '$lib/stores/auth';
+	import { currentUser } from '$lib/stores/auth';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
+	import type { LayoutData } from './$types';
 
-	const { children }: { children: Snippet } = $props();
+	const { children, data }: { children: Snippet; data: LayoutData } = $props();
 
-	// Switch auth to student user for student portal (only on mount, not SSR)
-	onMount(() => { currentUser.set(mockStudentUser); });
+	onMount(() => {
+		currentUser.set({
+			role: 'student',
+			profile: {
+				id: '',
+				name: data.layoutUser.name,
+				program: data.layoutUser.program,
+				year: 1,
+				email: '',
+				clearanceStatus: 'cleared',
+				requestCount: 0
+			}
+		});
+	});
 
 	const studentNav = [
 		{ label: 'Dashboard', icon: 'fa-solid fa-gauge-high', href: '/student/dashboard' },

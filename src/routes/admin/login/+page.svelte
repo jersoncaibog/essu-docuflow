@@ -1,21 +1,33 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { currentUser, mockStaffUser } from '$lib/stores/auth';
 
 	let email = $state('');
 	let password = $state('');
 	let error = $state('');
 	let loading = $state(false);
 
-	function handleLogin(e: Event) {
+	async function handleLogin(e: Event) {
 		e.preventDefault();
 		error = '';
 		if (!email || !password) { error = 'Please fill in all fields.'; return; }
 		loading = true;
-		setTimeout(() => {
-			currentUser.set(mockStaffUser);
-			goto('/staff/dashboard');
-		}, 600);
+		try {
+			const res = await fetch('/api/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email, password, rememberMe: false })
+			});
+			const data = await res.json();
+			if (!res.ok) {
+				error = data.error ?? 'Login failed. Please try again.';
+			} else {
+				goto('/staff/dashboard');
+			}
+		} catch {
+			error = 'Network error. Please try again.';
+		} finally {
+			loading = false;
+		}
 	}
 </script>
 

@@ -1,20 +1,12 @@
 <script lang="ts">
 	import Modal from '$lib/components/ui/Modal.svelte';
-	import Badge from '$lib/components/ui/Badge.svelte';
-	import { mockRequests } from '$lib/data/requests';
+	import type { PageData } from './$types';
 
-	const studentId = '2022-00123';
-	const profile = {
-		full_name: 'Juan Dela Cruz',
-		student_number: studentId,
-		program: 'BSIT',
-		year_graduated: null as number | null,
-		email: 'juan.delacruz@essu.edu.ph',
-		clearance_status: 'cleared',
-		date_registered: '2022-08-10'
-	};
+	let { data }: { data: PageData } = $props();
+	const profile = data.profile;
+	const fullName = [profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(' ');
 
-	const myRequests = mockRequests.filter((r) => r.studentId === studentId);
+	const myRequests: never[] = [];
 
 	let editPersonalOpen = $state(false);
 	let passwordOpen = $state(false);
@@ -35,7 +27,7 @@
 		currentPassword = newPassword = confirmPassword = '';
 	}
 
-	const initials = profile.full_name.split(' ').map((n) => n[0]).slice(0, 2).join('');
+	const initials = [profile.first_name, profile.last_name].map((n) => n[0]).join('');
 </script>
 
 <div class="max-w-4xl mx-auto space-y-5">
@@ -49,10 +41,9 @@
 				</div>
 				<div class="mb-2 flex-1">
 					<div class="flex items-center gap-2">
-						<h2 class="text-xl font-bold text-gray-800">{profile.full_name}</h2>
-						<Badge value={profile.clearance_status as 'cleared'} />
+						<h2 class="text-xl font-bold text-gray-800">{fullName}</h2>
 					</div>
-					<p class="text-sm text-gray-500">{profile.program} · {profile.student_number}</p>
+					<p class="text-sm text-gray-500">{profile.program} · {profile.student_id}</p>
 				</div>
 			</div>
 
@@ -83,7 +74,10 @@
 					</button>
 				</div>
 				<div class="grid grid-cols-2 gap-4 p-5 text-sm">
-					<div><p class="text-xs text-gray-400">Full Name</p><p class="font-medium">{profile.full_name}</p></div>
+					<div><p class="text-xs text-gray-400">First Name</p><p class="font-medium">{profile.first_name}</p></div>
+					<div><p class="text-xs text-gray-400">Middle Name</p><p class="font-medium">{profile.middle_name || '—'}</p></div>
+					<div><p class="text-xs text-gray-400">Last Name</p><p class="font-medium">{profile.last_name}</p></div>
+					<div><p class="text-xs text-gray-400">Date of Birth</p><p class="font-medium">{profile.date_of_birth}</p></div>
 					<div><p class="text-xs text-gray-400">Email</p><p class="font-medium">{profile.email}</p></div>
 				</div>
 			</div>
@@ -95,10 +89,16 @@
 					<span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">Read-only</span>
 				</div>
 				<div class="grid grid-cols-2 gap-4 p-5 text-sm">
-					<div><p class="text-xs text-gray-400">Student Number</p><p class="font-medium">{profile.student_number}</p></div>
+					<div><p class="text-xs text-gray-400">Student ID</p><p class="font-medium">{profile.student_id}</p></div>
 					<div><p class="text-xs text-gray-400">Program</p><p class="font-medium">{profile.program}</p></div>
-					<div><p class="text-xs text-gray-400">Year Graduated</p><p class="font-medium">{profile.year_graduated ?? '—'}</p></div>
-					<div><p class="text-xs text-gray-400">Clearance</p><Badge value={profile.clearance_status as 'cleared'} /></div>
+					<div class="col-span-2"><p class="text-xs text-gray-400">Student Type</p><p class="font-medium">
+						{#if profile.student_type === 'Enrolled'}Currently Enrolled Graduate Student
+						{:else if profile.student_type === 'Supplemental'}Supplemental Student
+						{:else if profile.student_type === 'Former'}Former Graduate Student
+						{:else if profile.student_type === 'Alumni'}Alumni
+						{:else}—{/if}
+					</p></div>
+					<div><p class="text-xs text-gray-400">Last School Year Attended</p><p class="font-medium">{profile.last_school_year ?? '—'}</p></div>
 					<div><p class="text-xs text-gray-400">Date Registered</p><p class="font-medium">{profile.date_registered}</p></div>
 				</div>
 			</div>

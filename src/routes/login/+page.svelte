@@ -1,42 +1,63 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
-	import { currentUser, mockStudentUser } from '$lib/stores/auth';
+	import { currentUser } from '$lib/stores/auth';
+	import type { AuthUser } from '$lib/types';
 
 	let mode: 'login' | 'signup' | 'check-email' = $state('login');
 	let email = $state('');
 	let password = $state('');
-	let fullName = $state('');
+	let firstName = $state('');
+	let middleName = $state('');
+	let lastName = $state('');
+	let dateOfBirth = $state('');
 	let confirmPassword = $state('');
-	let termsAccepted = $state(false);
+	let studentId = $state('');
+	let program = $state('');
+	let studentType = $state('');
+	let lastSchoolYear = $state('');
+	let rememberMe = $state(false);
 	let error = $state('');
 	let loading = $state(false);
 
-	function handleLogin(e: Event) {
+	async function handleLogin(e: Event) {
 		e.preventDefault();
 		error = '';
 		if (!email || !password) { error = 'Please fill in all fields.'; return; }
 		loading = true;
-		// Mock login — in real app, call API
-		setTimeout(() => {
-			currentUser.set(mockStudentUser);
-			goto('/student/dashboard');
-		}, 600);
+		try {
+			const res = await fetch('/api/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email, password, rememberMe })
+			});
+			const data = await res.json();
+			if (!res.ok) {
+				error = data.error ?? 'Login failed. Please try again.';
+			} else {
+				currentUser.set({ role: data.role, profile: data.profile } as AuthUser);
+				goto(data.role === 'student' ? '/student/dashboard' : '/staff/dashboard');
+			}
+		} catch {
+			error = 'Network error. Please try again.';
+		} finally {
+			loading = false;
+		}
 	}
 
 	async function handleSignup(e: Event) {
 		e.preventDefault();
 		if (!browser) return;
 		error = '';
-		if (!fullName || !email || !password || !confirmPassword) { error = 'Please fill in all fields.'; return; }
+		if (!firstName || !lastName || !dateOfBirth || !email || !studentId || !program || !studentType || !lastSchoolYear || !password || !confirmPassword) { error = 'Please fill in all required fields.'; return; }
+		if (!/^\d{2}-\d{4}$/.test(studentId)) { error = 'Student ID must follow the format 00-0000.'; return; }
 		if (password !== confirmPassword) { error = 'Passwords do not match.'; return; }
-		if (!termsAccepted) { error = 'Please accept the terms and conditions.'; return; }
 		loading = true;
 		try {
 			const res = await fetch('/api/register', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ fullName, email, password })
+				body: JSON.stringify({ firstName, middleName, lastName, dateOfBirth, email, studentId, program, studentType, lastSchoolYear: Number(lastSchoolYear), password })
 			});
 			const data = await res.json();
 			if (!res.ok) {
@@ -135,7 +156,7 @@
 							</div>
 							<div class="flex items-center justify-between text-sm">
 								<label class="flex items-center gap-2 text-gray-500 cursor-pointer">
-									<input type="checkbox" class="rounded" />
+									<input bind:checked={rememberMe} type="checkbox" class="rounded" />
 									Remember me
 								</label>
 								<a href="#" class="text-essu-green hover:underline">Forgot password?</a>
@@ -155,15 +176,57 @@
 						</div>
 					{:else}
 						<form onsubmit={handleSignup} class="space-y-4">
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
+									<input
+										bind:value={firstName}
+										type="text"
+										placeholder="Juan"
+										required
+										class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
+									/>
+								</div>
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-1.5">Middle Name <span class="text-gray-400 font-normal">(optional)</span></label>
+									<input
+										bind:value={middleName}
+										type="text"
+										placeholder="Dela"
+										class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
+									/>
+								</div>
+							</div>
 							<div>
-								<label class="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+								<label class="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
 								<input
-									bind:value={fullName}
+									bind:value={lastName}
 									type="text"
-									placeholder="Juan Dela Cruz"
+									placeholder="Cruz"
 									required
 									class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
 								/>
+							</div>
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth</label>
+									<input
+										bind:value={dateOfBirth}
+										type="date"
+										required
+										class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
+									/>
+								</div>
+								<div>
+									<label class="block text-sm font-medium text-gray-700 mb-1.5">Student ID</label>
+									<input
+										bind:value={studentId}
+										type="text"
+										placeholder="00-0000"
+										required
+										class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
+									/>
+								</div>
 							</div>
 							<div>
 								<label class="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
@@ -171,6 +234,51 @@
 									bind:value={email}
 									type="email"
 									placeholder="yourname@essu.edu.ph"
+									required
+									class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-1.5">Program / Course</label>
+								<input
+									bind:value={program}
+									type="text"
+									placeholder="e.g. Master of IT"
+									required
+									class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-1.5">Student Type</label>
+								<div class="space-y-2">
+									{#each [
+										{ value: 'Enrolled', label: 'Currently Enrolled', description: 'You are actively taking classes and are currently enrolled this semester.' },
+										{ value: 'Supplemental', label: 'Supplemental', description: 'You are completing or retaking specific units or subjects to fulfill graduation requirements.' },
+										{ value: 'Former', label: 'Former Student', description: 'You have previously attended ESSU but are no longer actively enrolled.' },
+										{ value: 'Alumni', label: 'Alumni', description: 'You have already graduated from ESSU and are requesting documents as a graduate.' }
+									] as opt}
+										<button
+											type="button"
+											onclick={() => (studentType = opt.value)}
+											class="w-full text-left px-4 py-3 rounded-lg border-2 transition-all
+												{studentType === opt.value
+													? 'border-essu-green bg-essu-green/5'
+													: 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}"
+										>
+											<p class="text-sm font-medium {studentType === opt.value ? 'text-essu-green' : 'text-gray-700'}">{opt.label}</p>
+											<p class="text-xs text-gray-400 mt-0.5">{opt.description}</p>
+										</button>
+									{/each}
+								</div>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-gray-700 mb-1.5">Last School Year Attended</label>
+								<input
+									bind:value={lastSchoolYear}
+									type="number"
+									placeholder="e.g. 2024"
+									min="1990"
+									max="2100"
 									required
 									class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 focus:border-essu-green-light"
 								/>
@@ -198,13 +306,6 @@
 									/>
 								</div>
 							</div>
-							<label class="flex items-start gap-2 text-sm text-gray-600 cursor-pointer">
-								<input bind:checked={termsAccepted} type="checkbox" class="mt-0.5 rounded shrink-0" />
-								<span>
-									I agree to the <a href="#" class="text-essu-green hover:underline">Terms and Conditions</a>
-									and <a href="#" class="text-essu-green hover:underline">Privacy Policy</a>
-								</span>
-							</label>
 							<button
 								type="submit"
 								disabled={loading}

@@ -1,10 +1,9 @@
 <script lang="ts">
 	import Modal from '$lib/components/ui/Modal.svelte';
-	import { currentUser } from '$lib/stores/auth';
-	import type { StaffMember } from '$lib/types';
+	import type { PageData } from './$types';
 
-	const user = $derived($currentUser);
-	const profile = $derived(user?.profile as StaffMember);
+	const { data }: { data: PageData } = $props();
+	const profile = data.profile;
 
 	// Edit modal state
 	let editPersonalOpen = $state(false);
@@ -29,14 +28,6 @@
 		passwordOpen = false;
 		currentPassword = newPassword = confirmPassword = '';
 	}
-
-	const activityLog = [
-		{ date: '2024-01-18 09:30', action: 'Approved request REQ-2024-003' },
-		{ date: '2024-01-17 14:00', action: 'Rejected request REQ-2024-004 (incomplete clearance)' },
-		{ date: '2024-01-16 11:00', action: 'Marked REQ-2024-006 as ready for release' },
-		{ date: '2024-01-15 09:00', action: 'Updated document template TOR v3.0' },
-		{ date: '2024-01-14 16:30', action: 'Exported monthly report (December 2023)' }
-	];
 </script>
 
 <div class="max-w-4xl mx-auto space-y-5">
@@ -46,11 +37,13 @@
 		<div class="px-6 pb-6">
 			<div class="flex items-end gap-4 -mt-3 mb-4">
 				<div class="w-20 h-20 rounded-2xl bg-white border-4 border-white shadow-md flex items-center justify-center text-2xl font-bold text-essu-green">
-					{profile?.avatarInitials ?? '??'}
+					{profile.initials}
 				</div>
 				<div class="mb-2">
-					<h2 class="text-xl font-bold text-gray-800">{profile?.name}</h2>
-					<p class="text-sm text-gray-500">{profile?.position} · {profile?.department}</p>
+					<h2 class="text-xl font-bold text-gray-800">{profile.full_name}</h2>
+					<p class="text-sm text-gray-500">
+						{profile.position ?? '—'} · {profile.role}
+					</p>
 				</div>
 			</div>
 		</div>
@@ -68,18 +61,9 @@
 					</button>
 				</div>
 				<div class="grid grid-cols-2 gap-4 p-5 text-sm">
-					{#each [
-						['Full Name', profile?.name],
-						['Staff ID', profile?.id],
-						['Date of Birth', '1985-06-15'],
-						['Gender', 'Female'],
-						['Nationality', 'Filipino']
-					] as [label, value]}
-						<div>
-							<p class="text-xs text-gray-400 mb-0.5">{label}</p>
-							<p class="font-medium text-gray-700">{value ?? '—'}</p>
-						</div>
-					{/each}
+					<div><p class="text-xs text-gray-400 mb-0.5">First Name</p><p class="font-medium text-gray-700">{profile.first_name}</p></div>
+					<div><p class="text-xs text-gray-400 mb-0.5">Middle Name</p><p class="font-medium text-gray-700">{profile.middle_name ?? '—'}</p></div>
+					<div><p class="text-xs text-gray-400 mb-0.5">Last Name</p><p class="font-medium text-gray-700">{profile.last_name}</p></div>
 				</div>
 			</div>
 
@@ -92,18 +76,9 @@
 					</button>
 				</div>
 				<div class="grid grid-cols-2 gap-4 p-5 text-sm">
-					{#each [
-						['Position', profile?.position],
-						['Department', profile?.department],
-						['Employee ID', profile?.id],
-						['Hire Date', '2015-03-01'],
-						['Employment Status', 'Regular']
-					] as [label, value]}
-						<div>
-							<p class="text-xs text-gray-400 mb-0.5">{label}</p>
-							<p class="font-medium text-gray-700">{value ?? '—'}</p>
-						</div>
-					{/each}
+					<div><p class="text-xs text-gray-400 mb-0.5">Role</p><p class="font-medium text-gray-700">{profile.role}</p></div>
+					<div><p class="text-xs text-gray-400 mb-0.5">Position</p><p class="font-medium text-gray-700">{profile.position ?? '—'}</p></div>
+					<div><p class="text-xs text-gray-400 mb-0.5">Date Registered</p><p class="font-medium text-gray-700">{profile.date_registered}</p></div>
 				</div>
 			</div>
 
@@ -116,25 +91,7 @@
 					</button>
 				</div>
 				<div class="grid grid-cols-2 gap-4 p-5 text-sm">
-					<div><p class="text-xs text-gray-400">Email</p><p class="font-medium">{profile?.email}</p></div>
-					<div><p class="text-xs text-gray-400">Phone</p><p class="font-medium">{profile?.phone ?? '—'}</p></div>
-					<div class="col-span-2"><p class="text-xs text-gray-400">Address</p><p class="font-medium">123 Registrar St., Borongan City, Eastern Samar</p></div>
-				</div>
-			</div>
-
-			<!-- Activity Log -->
-			<div class="bg-white rounded-xl border border-gray-100 shadow-sm">
-				<div class="px-5 py-4 border-b border-gray-100">
-					<h3 class="font-semibold text-gray-700">Recent Activity</h3>
-				</div>
-				<div class="divide-y divide-gray-50">
-					{#each activityLog as log}
-						<div class="flex items-center gap-3 px-5 py-3 text-sm">
-							<i class="fa-solid fa-circle-dot text-essu-green text-xs shrink-0"></i>
-							<span class="flex-1 text-gray-700">{log.action}</span>
-							<span class="text-xs text-gray-400 whitespace-nowrap">{log.date}</span>
-						</div>
-					{/each}
+					<div class="col-span-2"><p class="text-xs text-gray-400">Email</p><p class="font-medium">{profile.email}</p></div>
 				</div>
 			</div>
 		</div>
@@ -216,13 +173,11 @@
 	{/snippet}
 	{#snippet footer()}
 		<button onclick={() => (confirmOpen = false)} class="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Cancel</button>
-		<button onclick={() => (confirmOpen = false)} class="px-4 py-2 text-sm bg-essu-green text-white rounded-lg hover:bg-essu-green-mid transition-colors">
-			Confirm
-		</button>
+		<button onclick={() => (confirmOpen = false)} class="px-4 py-2 text-sm bg-essu-green text-white rounded-lg hover:bg-essu-green-mid transition-colors">Confirm</button>
 	{/snippet}
 </Modal>
 
-<!-- Edit modals (simplified) -->
+<!-- Edit modals -->
 {#each [
 	{ open: editPersonalOpen, title: 'Edit Personal Information', onclose: () => (editPersonalOpen = false) },
 	{ open: editProfessionalOpen, title: 'Edit Professional Information', onclose: () => (editProfessionalOpen = false) },

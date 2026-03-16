@@ -38,7 +38,10 @@
 		// TemplateStatus
 		active: 'bg-green-100 text-green-700 border border-green-200',
 		archived: 'bg-gray-100 text-gray-500 border border-gray-200',
-		draft: 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+		draft: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+		// Request statuses
+		'correction requested': 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+		approved: 'bg-green-100 text-green-700 border border-green-200'
 	};
 
 	const labelMap: Record<string, string> = {
@@ -46,7 +49,8 @@
 		'not-cleared': 'Not Cleared',
 		'with-balance': 'With Balance',
 		rush: 'Rush',
-		regular: 'Regular'
+		regular: 'Regular',
+		'correction requested': 'Correction Requested'
 	};
 
 	const classes = $derived(colorMap[value] ?? 'bg-gray-100 text-gray-600 border border-gray-200');

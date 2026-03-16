@@ -27,8 +27,8 @@
 
 	function closeMobile() { sidebarMobileOpen.set(false); }
 
-	function logout() {
-		currentUser.set(null);
+	async function logout() {
+		await fetch('/api/logout', { method: 'POST' });
 		goto('/login');
 	}
 

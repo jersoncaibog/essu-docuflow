@@ -57,7 +57,7 @@ export const templateVariables = [
 	{ key: '{{student_name}}', description: 'Full name of the student' },
 	{ key: '{{student_id}}', description: 'Student ID number' },
 	{ key: '{{program}}', description: 'Degree program (e.g., BSIT)' },
-	{ key: '{{year_graduated}}', description: 'Year of graduation' },
+	{ key: '{{last_school_year}}', description: 'Last school year attended' },
 	{ key: '{{date_issued}}', description: 'Date the document was issued' },
 	{ key: '{{control_number}}', description: 'Auto-generated control number' },
 	{ key: '{{registrar_name}}', description: 'Name of the University Registrar' },

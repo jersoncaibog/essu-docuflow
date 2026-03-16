@@ -13,7 +13,7 @@
 	const collapsed = $derived($sidebarCollapsed);
 	const user = $derived($currentUser);
 
-	const avatarLabel = $derived(() => {
+	const avatarLabel = $derived.by(() => {
 		if (!user) return '?';
 		const profile = user.profile as StaffMember & Student;
 		if ('avatarInitials' in profile && profile.avatarInitials) return profile.avatarInitials;
@@ -26,7 +26,7 @@
 	});
 
 	const displayName = $derived(user?.profile.name ?? 'User');
-	const displayRole = $derived(() => {
+	const displayRole = $derived.by(() => {
 		if (!user) return '';
 		if (user.role === 'staff') return (user.profile as StaffMember).position ?? 'Staff';
 		return `${(user.profile as Student).program} · Year ${(user.profile as Student).year}`;
@@ -64,11 +64,11 @@
 		<!-- User avatar -->
 		<div class="flex items-center gap-2 pl-2 border-l border-gray-100">
 			<div class="w-8 h-8 rounded-full bg-essu-green flex items-center justify-center text-white text-xs font-bold shrink-0">
-				{avatarLabel()}
+				{avatarLabel}
 			</div>
 			<div class="hidden sm:block text-left">
 				<p class="text-sm font-medium text-gray-800 leading-tight">{displayName}</p>
-				<p class="text-xs text-gray-500 leading-tight">{displayRole()}</p>
+				<p class="text-xs text-gray-500 leading-tight">{displayRole}</p>
 			</div>
 		</div>
 	</div>

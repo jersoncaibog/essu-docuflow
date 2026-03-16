@@ -3,30 +3,40 @@
 	import TopBar from '$lib/components/layout/TopBar.svelte';
 	import { page } from '$app/stores';
 	import { sidebarCollapsed } from '$lib/stores/sidebar';
+	import { currentUser } from '$lib/stores/auth';
+	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
+	import type { LayoutData } from './$types';
 
-	const { children }: { children: Snippet } = $props();
+	const { children, data }: { children: Snippet; data: LayoutData } = $props();
+
+	onMount(() => {
+		currentUser.set({
+			role: 'staff',
+			profile: {
+				id: '',
+				name: data.layoutUser.name,
+				position: data.layoutUser.position,
+				department: 'Registrar',
+				email: '',
+				avatarInitials: data.layoutUser.initials
+			}
+		});
+	});
 
 	const staffNav = [
 		{ label: 'Dashboard', icon: 'fa-solid fa-gauge-high', href: '/staff/dashboard' },
 		{ label: 'All Requests', icon: 'fa-solid fa-list-check', href: '/staff/requests' },
-		{ label: 'Pending Requests', icon: 'fa-solid fa-clock', href: '/staff/requests/pending' },
-		{ label: 'Document Process', icon: 'fa-solid fa-gears', href: '/staff/documents/process' },
-		{ label: 'Templates', icon: 'fa-solid fa-file-invoice', href: '/staff/documents/templates' },
-		{ label: 'Student Registry', icon: 'fa-solid fa-users', href: '/staff/registry' },
+		{ label: 'Documents', icon: 'fa-solid fa-file-lines', href: '/staff/documents' },
 		{ label: 'Reports', icon: 'fa-solid fa-chart-bar', href: '/staff/reports' },
 		{ label: 'Notifications', icon: 'fa-regular fa-bell', href: '/staff/notifications' },
 		{ label: 'My Profile', icon: 'fa-solid fa-circle-user', href: '/staff/profile' }
 	];
 
-	// Derive page title from current path
 	const titleMap: Record<string, string> = {
 		'/staff/dashboard': 'Dashboard',
 		'/staff/requests': 'All Requests',
-		'/staff/requests/pending': 'Pending Requests',
-		'/staff/documents/process': 'Document Processing',
-		'/staff/documents/templates': 'Document Templates',
-		'/staff/registry': 'Student Registry',
+		'/staff/documents': 'Documents',
 		'/staff/reports': 'Reports & Analytics',
 		'/staff/notifications': 'Notifications',
 		'/staff/profile': 'My Profile'

@@ -1,217 +1,250 @@
 <script lang="ts">
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Modal from '$lib/components/ui/Modal.svelte';
-	import Timeline from '$lib/components/ui/Timeline.svelte';
-	import EmptyState from '$lib/components/ui/EmptyState.svelte';
-	import StatCard from '$lib/components/ui/StatCard.svelte';
-	import { mockRequests, requestStatusTimeline } from '$lib/data/requests';
-	import type { Request } from '$lib/types';
+	import type { PageData } from './$types';
 
-	const studentId = '2022-00123';
-	const myRequests = $derived(mockRequests.filter((r) => r.studentId === studentId));
+	const { data }: { data: PageData } = $props();
 
-	let activeTab = $state<'submitted' | 'approved' | 'history'>('submitted');
-	let search = $state('');
-	let statusFilter = $state('');
-	let selectedRequest = $state<Request | null>(null);
-	let detailOpen = $state(false);
+	type Requirement = {
+		name: string; description?: string; in_person: boolean;
+		file_path: string | null; file_name: string | null;
+		submitted_at: string | null; needs_correction: boolean;
+	};
+	type RequestRow = {
+		request_id: string; document_name: string; purpose: string; status: string;
+		admin_message: string | null; approved_file_path: string | null;
+		approved_file_name: string | null; requirements: string | null; date_requested: string;
+	};
 
-	const submitted = $derived(
-		myRequests.filter((r) => {
-			const matchStatus = !statusFilter || r.status === statusFilter;
-			const q = search.toLowerCase();
-			const matchSearch = !q || r.id.toLowerCase().includes(q) || r.documentType.toLowerCase().includes(q);
-			return matchStatus && matchSearch;
-		})
-	);
+	// Override list after resubmit refresh; null means use server data
+	let requestsOverride = $state<RequestRow[] | null>(null);
+	const requests = $derived((requestsOverride ?? data.requests) as RequestRow[]);
 
-	const approved = $derived(myRequests.filter((r) => r.status === 'completed' || r.status === 'ready'));
-	const history = $derived(myRequests.filter((r) => ['completed', 'rejected', 'cancelled'].includes(r.status)));
+	// Resubmit modal
+	let resubmitOpen = $state(false);
+	let resubmitReq = $state<RequestRow | null>(null);
+	let resubmitFiles = $state<Record<string, File | null>>({});
+	let resubmitting = $state(false);
+	let resubmitError = $state('');
+	let toastMsg = $state('');
 
-	const timeline = $derived(selectedRequest ? requestStatusTimeline(selectedRequest.id) : []);
+	function parseReqs(json: string | null): Requirement[] {
+		if (!json) return [];
+		try { return JSON.parse(json); } catch { return []; }
+	}
 
-	function viewDetail(req: Request) {
-		selectedRequest = req;
-		detailOpen = true;
+	function openResubmit(r: RequestRow) {
+		resubmitReq = r;
+		resubmitFiles = {};
+		resubmitError = '';
+		resubmitOpen = true;
+	}
+
+	function showToast(msg: string) {
+		toastMsg = msg;
+		setTimeout(() => toastMsg = '', 4000);
+	}
+
+	async function getSignedUrl(path: string): Promise<string> {
+		const res = await fetch(`/api/storage?bucket=requirements&path=${encodeURIComponent(path)}`);
+		const d = await res.json();
+		return d.url ?? '';
+	}
+
+	async function openFile(path: string) {
+		const url = await getSignedUrl(path);
+		if (url) window.open(url, '_blank');
+	}
+
+	async function submitResubmission() {
+		if (!resubmitReq) return;
+		resubmitting = true;
+		resubmitError = '';
+		try {
+			const fd = new FormData();
+			const reqs = parseReqs(resubmitReq.requirements);
+			for (const r of reqs) {
+				if (!r.in_person && resubmitFiles[r.name]) {
+					fd.append(`file_${r.name}`, resubmitFiles[r.name]!);
+				}
+			}
+			const res = await fetch(`/api/requests/${resubmitReq.request_id}/requirements`, {
+				method: 'PATCH', body: fd
+			});
+			const result = await res.json();
+			if (!res.ok) { resubmitError = result.error ?? 'Resubmission failed.'; return; }
+
+			// Refresh data
+			const listRes = await fetch('/api/requests');
+			requestsOverride = await listRes.json();
+			resubmitOpen = false;
+			showToast('Requirements resubmitted successfully.');
+		} catch {
+			resubmitError = 'Network error.';
+		} finally {
+			resubmitting = false;
+		}
 	}
 </script>
 
+<!-- Toast -->
+{#if toastMsg}
+	<div class="fixed bottom-6 right-6 z-50 bg-gray-800 text-white text-sm px-4 py-3 rounded-xl shadow-lg flex items-center gap-2">
+		<i class="fa-solid fa-circle-check text-green-400"></i>
+		{toastMsg}
+	</div>
+{/if}
+
 <div class="space-y-5">
-	<!-- Stats -->
-	<div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
-		<StatCard label="Submitted" value={myRequests.length} icon="fa-solid fa-file-lines" color="blue" />
-		<StatCard label="Approved" value={approved.length} icon="fa-solid fa-circle-check" color="green" />
-		<StatCard label="Pending" value={myRequests.filter((r) => r.status === 'pending').length} icon="fa-solid fa-clock" color="orange" />
-		<StatCard label="For Revision" value={myRequests.filter((r) => r.status === 'revision').length} icon="fa-solid fa-rotate" color="red" />
+	<div>
+		<h2 class="text-lg font-semibold text-gray-800">My Document Requests</h2>
+		<p class="text-sm text-gray-500 mt-0.5">Track the status of your document requests.</p>
 	</div>
 
-	<!-- Tab switcher -->
-	<div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-		<div class="flex border-b border-gray-100">
-			{#each [
-				{ key: 'submitted', label: 'Submitted', count: myRequests.length },
-				{ key: 'approved', label: 'Approved & Ready', count: approved.length },
-				{ key: 'history', label: 'History', count: history.length }
-			] as tab}
-				<button
-					onclick={() => (activeTab = tab.key as typeof activeTab)}
-					class="flex-1 py-3.5 text-sm font-medium border-b-2 transition-colors
-						{activeTab === tab.key ? 'border-essu-green text-essu-green' : 'border-transparent text-gray-500 hover:text-gray-700'}"
-				>
-					{tab.label}
-					{#if tab.count > 0}
-						<span class="ml-1.5 px-1.5 py-0.5 text-xs rounded-full
-							{activeTab === tab.key ? 'bg-essu-green text-white' : 'bg-gray-100 text-gray-500'}">
-							{tab.count}
-						</span>
-					{/if}
-				</button>
-			{/each}
+	{#if requests.length === 0}
+		<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-16 text-center">
+			<i class="fa-solid fa-folder-open text-4xl text-gray-200 mb-4 block"></i>
+			<p class="text-gray-500 text-sm mb-3">No requests yet.</p>
+			<a href="/student/request" class="inline-flex items-center gap-2 px-4 py-2 bg-essu-green text-white rounded-lg text-sm hover:bg-essu-green-mid transition-colors">
+				<i class="fa-solid fa-plus text-xs"></i> Request a Document
+			</a>
 		</div>
-
-		<!-- Filters -->
-		<div class="flex items-center gap-3 px-5 py-3 border-b border-gray-50 bg-gray-50/50">
-			<div class="relative flex-1 max-w-64">
-				<i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-				<input
-					type="text"
-					bind:value={search}
-					placeholder="Search by ID or document..."
-					class="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-essu-green/30"
-				/>
-			</div>
-			{#if activeTab === 'submitted'}
-				<select bind:value={statusFilter} class="py-2 px-3 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-essu-green/30">
-					<option value="">All Status</option>
-					<option value="pending">Pending</option>
-					<option value="processing">Processing</option>
-					<option value="revision">For Revision</option>
-					<option value="rejected">Rejected</option>
-				</select>
-			{/if}
-		</div>
-
-		<!-- Content -->
-		{#if activeTab === 'submitted'}
-			{#if submitted.length === 0}
-				<EmptyState message="No requests found" description="Try adjusting your filters." />
-			{:else}
-				<div class="overflow-x-auto">
-					<table class="w-full text-sm">
-						<thead class="bg-gray-50 border-b border-gray-100">
-							<tr>
-								{#each ['Request ID', 'Document', 'Date Submitted', 'Payment', 'Status', 'Priority', 'Actions'] as col}
-									<th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{col}</th>
-								{/each}
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-gray-50">
-							{#each submitted as req}
-								<tr class="hover:bg-gray-50 transition-colors">
-									<td class="px-5 py-3 font-mono text-xs text-gray-500">{req.id}</td>
-									<td class="px-5 py-3 font-medium text-gray-800">{req.documentType}</td>
-									<td class="px-5 py-3 text-xs text-gray-500">{req.dateRequested}</td>
-									<td class="px-5 py-3"><Badge value={req.paymentStatus} /></td>
-									<td class="px-5 py-3"><Badge value={req.status} /></td>
-									<td class="px-5 py-3"><Badge value={req.priority} /></td>
-									<td class="px-5 py-3">
-										<button
-											onclick={() => viewDetail(req)}
-											class="text-xs px-2.5 py-1.5 bg-essu-green text-white rounded-lg hover:bg-essu-green-mid transition-colors"
-										>
-											<i class="fa-solid fa-eye mr-1"></i>View
-										</button>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			{/if}
-
-		{:else if activeTab === 'approved'}
-			{#if approved.length === 0}
-				<EmptyState message="No approved documents yet" />
-			{:else}
-				<div class="divide-y divide-gray-50">
-					{#each approved as req}
-						<div class="flex items-center gap-4 px-5 py-4">
-							<div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center shrink-0">
-								<i class="fa-solid fa-file-circle-check text-green-600"></i>
+	{:else}
+		<div class="space-y-4">
+			{#each requests as req}
+				{@const reqs = parseReqs(req.requirements)}
+				{@const needsCorrection = req.status === 'Correction Requested'}
+				<div class="bg-white rounded-xl border border-gray-100 shadow-sm {needsCorrection ? 'border-yellow-300' : ''}">
+					<div class="px-5 py-4 flex items-start justify-between gap-4 border-b border-gray-100">
+						<div>
+							<div class="flex items-center gap-2 mb-1">
+								<p class="font-semibold text-gray-800">{req.document_name}</p>
+								<Badge value={req.status.toLowerCase()} />
 							</div>
-							<div class="flex-1">
-								<p class="font-medium text-gray-800">{req.documentType}</p>
-								<p class="text-xs text-gray-400">{req.id} · Ready since {req.dateCompleted ?? req.dateRequested}</p>
+							<p class="text-xs text-gray-400 font-mono">{req.request_id} · {new Date(req.date_requested).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+						</div>
+						{#if needsCorrection}
+							<button
+								onclick={() => openResubmit(req)}
+								class="shrink-0 flex items-center gap-2 px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-xs font-medium hover:bg-yellow-600 transition-colors"
+							>
+								<i class="fa-solid fa-rotate-left"></i> Resubmit
+							</button>
+						{/if}
+					</div>
+
+					<div class="px-5 py-4 space-y-3 text-sm">
+						<div>
+							<p class="text-xs text-gray-400 mb-0.5">Purpose</p>
+							<p class="text-gray-700">{req.purpose}</p>
+						</div>
+
+						{#if req.admin_message}
+							<div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+								<p class="text-xs font-semibold text-yellow-700 mb-1">
+									<i class="fa-solid fa-message mr-1"></i>Message from Registrar
+								</p>
+								<p class="text-sm text-yellow-800">{req.admin_message}</p>
 							</div>
-							<div class="flex items-center gap-2">
-								<Badge value={req.status} />
+						{/if}
+
+						{#if reqs.length > 0}
+							<div>
+								<p class="text-xs text-gray-400 mb-2">Requirements</p>
+								<div class="space-y-1">
+									{#each reqs as r}
+										<div class="flex items-center justify-between gap-3 py-1.5 border-b border-gray-50 last:border-0">
+											<div class="flex items-center gap-2 min-w-0">
+												{#if r.needs_correction}
+													<i class="fa-solid fa-triangle-exclamation text-yellow-500 text-xs shrink-0"></i>
+												{:else if r.in_person}
+													<i class="fa-solid fa-building text-orange-400 text-xs shrink-0"></i>
+												{:else if r.file_path}
+													<i class="fa-solid fa-circle-check text-green-500 text-xs shrink-0"></i>
+												{:else}
+													<i class="fa-regular fa-circle text-gray-300 text-xs shrink-0"></i>
+												{/if}
+												<span class="text-xs text-gray-700 truncate {r.needs_correction ? 'text-yellow-700 font-medium' : ''}">{r.name}</span>
+											</div>
+											<div class="flex items-center gap-2 shrink-0">
+												{#if r.in_person}
+													<span class="text-xs text-orange-500">In-person</span>
+												{:else if r.file_path}
+													<button onclick={() => openFile(r.file_path!)} class="text-xs text-essu-green hover:underline">View</button>
+												{:else}
+													<span class="text-xs text-gray-400">Pending</span>
+												{/if}
+											</div>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						{#if req.approved_file_path}
+							<div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+								<p class="text-xs font-semibold text-green-700 mb-2">
+									<i class="fa-solid fa-circle-check mr-1"></i>Document Ready
+								</p>
 								<button
-									onclick={() => viewDetail(req)}
-									class="text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+									onclick={() => openFile(req.approved_file_path!)}
+									class="flex items-center gap-2 text-sm text-essu-green hover:underline font-medium"
 								>
-									Details
+									<i class="fa-solid fa-download"></i>
+									{req.approved_file_name ?? 'Download your document'}
 								</button>
 							</div>
-						</div>
-					{/each}
+						{/if}
+					</div>
 				</div>
-			{/if}
-
-		{:else}
-			{#if history.length === 0}
-				<EmptyState message="No request history" />
-			{:else}
-				<div class="divide-y divide-gray-50">
-					{#each history as req}
-						<div class="flex items-center gap-4 px-5 py-3">
-							<div class="flex-1">
-								<p class="text-sm font-medium text-gray-700">{req.documentType}</p>
-								<p class="text-xs text-gray-400">{req.id} · {req.dateCompleted ?? req.dateRequested}</p>
-							</div>
-							<Badge value={req.status} />
-						</div>
-					{/each}
-				</div>
-			{/if}
-		{/if}
-	</div>
+			{/each}
+		</div>
+	{/if}
 </div>
 
-<!-- Detail Modal -->
-<Modal open={detailOpen} title="Request Details" size="lg" onclose={() => (detailOpen = false)}>
+<!-- Resubmit Modal -->
+<Modal open={resubmitOpen} title="Resubmit Requirements" size="sm" onclose={() => resubmitOpen = false}>
 	{#snippet body()}
-		{#if selectedRequest}
-			<div class="space-y-5">
-				<div class="grid grid-cols-2 gap-4 text-sm">
-					<div><p class="text-xs text-gray-400">Request ID</p><p class="font-mono font-semibold">{selectedRequest.id}</p></div>
-					<div><p class="text-xs text-gray-400">Date Submitted</p><p class="font-medium">{selectedRequest.dateRequested}</p></div>
-					<div><p class="text-xs text-gray-400">Document Type</p><p class="font-medium">{selectedRequest.documentType}</p></div>
-					<div><p class="text-xs text-gray-400">Copies</p><p class="font-medium">{selectedRequest.numCopies ?? 1}</p></div>
-					<div><p class="text-xs text-gray-400">Purpose</p><p class="font-medium">{selectedRequest.purpose ?? '—'}</p></div>
-					<div><p class="text-xs text-gray-400">Status</p><Badge value={selectedRequest.status} /></div>
-					<div><p class="text-xs text-gray-400">Payment</p><Badge value={selectedRequest.paymentStatus} /></div>
-					<div><p class="text-xs text-gray-400">Priority</p><Badge value={selectedRequest.priority} /></div>
-					{#if selectedRequest.rejectionReason}
-						<div class="col-span-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-							<p class="text-xs text-red-400 mb-0.5">Rejection Reason</p>
-							<p class="text-sm text-red-700 font-medium">{selectedRequest.rejectionReason}</p>
+		{#if resubmitReq}
+			{@const reqs = parseReqs(resubmitReq.requirements)}
+			<div class="space-y-4">
+				{#if resubmitReq.admin_message}
+					<div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+						<strong>Staff message:</strong> {resubmitReq.admin_message}
+					</div>
+				{/if}
+				{#if resubmitError}
+					<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{resubmitError}</div>
+				{/if}
+				<p class="text-sm text-gray-600">Upload corrected files for the flagged requirements:</p>
+				<div class="space-y-3">
+					{#each reqs.filter(r => !r.in_person) as r}
+						<div class="border border-gray-100 rounded-lg p-3 {r.needs_correction ? 'border-yellow-300 bg-yellow-50/30' : ''}">
+							<div class="flex items-center gap-2 mb-2">
+								{#if r.needs_correction}
+									<i class="fa-solid fa-triangle-exclamation text-yellow-500 text-xs"></i>
+								{/if}
+								<p class="text-sm font-medium text-gray-700 {r.needs_correction ? 'text-yellow-700' : ''}">{r.name}</p>
+							</div>
+							<label class="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-essu-green/50 text-sm {resubmitFiles[r.name] ? 'text-essu-green' : 'text-gray-400'}">
+								<i class="fa-solid fa-upload text-xs"></i>
+								{resubmitFiles[r.name] ? resubmitFiles[r.name]!.name : (r.file_name ? `Replace: ${r.file_name}` : 'Upload file')}
+								<input type="file" accept="image/*,.pdf" class="hidden" onchange={(e) => {
+									const f = (e.target as HTMLInputElement).files?.[0];
+									resubmitFiles = { ...resubmitFiles, [r.name]: f ?? null };
+								}} />
+							</label>
 						</div>
-					{/if}
-				</div>
-
-				<div class="border-t border-gray-100 pt-4">
-					<p class="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">Request Timeline</p>
-					<Timeline events={timeline} />
+					{/each}
 				</div>
 			</div>
 		{/if}
 	{/snippet}
 	{#snippet footer()}
-		{#if selectedRequest?.status === 'revision'}
-			<button class="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
-				<i class="fa-solid fa-upload mr-1"></i>Re-upload Files
-			</button>
-		{/if}
-		<button onclick={() => (detailOpen = false)} class="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Close</button>
+		<button onclick={() => resubmitOpen = false} class="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Cancel</button>
+		<button onclick={submitResubmission} disabled={resubmitting} class="px-4 py-2 text-sm bg-essu-green text-white rounded-lg hover:bg-essu-green-mid disabled:opacity-60 flex items-center gap-2">
+			{#if resubmitting}<i class="fa-solid fa-circle-notch fa-spin"></i>{/if}
+			Resubmit
+		</button>
 	{/snippet}
 </Modal>
