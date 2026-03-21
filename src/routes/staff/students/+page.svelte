@@ -114,10 +114,6 @@
 		Alumni: 'bg-green-100 text-green-700 border border-green-200'
 	};
 
-	const PROGRAMS = [
-		'BSIT', 'BSCS', 'BSED', 'BEED', 'BSN', 'BSCRIM', 'BSBA', 'BSHM', 'BSTM',
-		'BSA', 'BSAIS', 'BSMA', 'BSAT', 'BSEntrep', 'BSME', 'BSCE', 'BSEE', 'Other'
-	];
 </script>
 
 <div class="space-y-5">
@@ -349,16 +345,13 @@
 						<label class="block text-sm font-medium text-gray-700 mb-1.5">
 							Program <span class="text-red-500">*</span>
 						</label>
-						<select
+						<input
 							bind:value={editStudent.program}
+							type="text"
+							placeholder="e.g. Master of IT"
 							required
-							class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 bg-white"
-						>
-							<option value={null}>Select program</option>
-							{#each PROGRAMS as prog}
-								<option value={prog}>{prog}</option>
-							{/each}
-						</select>
+							class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30"
+						/>
 					</div>
 					<div>
 						<label class="block text-sm font-medium text-gray-700 mb-1.5">
@@ -370,7 +363,7 @@
 							class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-essu-green/30 bg-white"
 						>
 							<option value={null}>Select type</option>
-							<option value="Enrolled">Enrolled</option>
+							<option value="Enrolled">Currently Enrolled</option>
 							<option value="Supplemental">Supplemental</option>
 							<option value="Former">Former</option>
 							<option value="Alumni">Alumni</option>

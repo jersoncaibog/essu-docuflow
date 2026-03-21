@@ -107,3 +107,41 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	return json({ success: true, request_id: requestId });
 };
+
+export const DELETE: RequestHandler = async ({ request, cookies }) => {
+	const token = cookies.get('session');
+	if (!token) return json({ error: 'Unauthorized' }, { status: 401 });
+
+	let payload: { userId: number; role: string };
+	try {
+		payload = verifyJwt<{ userId: number; role: string }>(token, JWT_SECRET);
+	} catch {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
+	if (payload.role === 'Student') return json({ error: 'Forbidden' }, { status: 403 });
+
+	const { request_id } = await request.json();
+
+	// Clean up uploaded files from Supabase
+	const [rows] = await pool.execute(
+		'SELECT requirements, approved_file_path FROM requests WHERE request_id = ?',
+		[request_id]
+	);
+	const req = (rows as Record<string, unknown>[])[0];
+	if (req) {
+		const filePaths: string[] = [];
+		if (req.approved_file_path) filePaths.push(req.approved_file_path as string);
+		try {
+			const reqs = JSON.parse(req.requirements as string ?? '[]') as { file_path: string | null }[];
+			for (const r of reqs) { if (r.file_path) filePaths.push(r.file_path); }
+		} catch {}
+		if (filePaths.length > 0) {
+			await supabase.storage.from('requirements').remove(filePaths);
+		}
+	}
+
+	await pool.execute('DELETE FROM request_status_history WHERE request_id = ?', [request_id]);
+	await pool.execute('DELETE FROM requests WHERE request_id = ?', [request_id]);
+
+	return json({ success: true });
+};

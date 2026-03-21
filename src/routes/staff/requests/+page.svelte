@@ -12,10 +12,27 @@
 		purpose: string; date_requested: string;
 	};
 
-	const requests = data.requests as Req[];
+	let requests = $state(data.requests as Req[]);
 
 	let search = $state('');
 	let filterStatus = $state('');
+
+	let deletingId = $state<string | null>(null);
+	let deleteConfirmId = $state<string | null>(null);
+
+	async function handleDelete(id: string) {
+		deletingId = id;
+		const res = await fetch('/api/requests', {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ request_id: id })
+		});
+		if (res.ok) {
+			requests = requests.filter(r => r.request_id !== id);
+		}
+		deletingId = null;
+		deleteConfirmId = null;
+	}
 
 	const filtered = $derived(
 		requests.filter(r => {
@@ -107,12 +124,34 @@
 								</td>
 								<td class="px-4 py-3"><Badge value={req.status.toLowerCase()} /></td>
 								<td class="px-4 py-3">
-									<a
-										href="/staff/requests/{req.request_id}"
-										class="text-xs px-2.5 py-1.5 bg-essu-green text-white rounded-lg hover:bg-essu-green-mid transition-colors"
-									>
-										<i class="fa-solid fa-eye mr-1"></i>Review
-									</a>
+									<div class="flex items-center gap-2">
+										<a
+											href="/staff/requests/{req.request_id}"
+											class="text-xs px-2.5 py-1.5 bg-essu-green text-white rounded-lg hover:bg-essu-green-mid transition-colors"
+										>
+											<i class="fa-solid fa-eye mr-1"></i>Review
+										</a>
+										{#if deleteConfirmId === req.request_id}
+											<button
+												onclick={() => handleDelete(req.request_id)}
+												disabled={deletingId === req.request_id}
+												class="text-xs px-2.5 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+											>
+												{deletingId === req.request_id ? 'Deleting…' : 'Confirm'}
+											</button>
+											<button
+												onclick={() => deleteConfirmId = null}
+												class="text-xs px-2 py-1.5 text-gray-500 hover:text-gray-700"
+											>Cancel</button>
+										{:else}
+											<button
+												onclick={() => deleteConfirmId = req.request_id}
+												class="text-xs px-2.5 py-1.5 border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+											>
+												<i class="fa-solid fa-trash"></i>
+											</button>
+										{/if}
+									</div>
 								</td>
 							</tr>
 						{/each}
